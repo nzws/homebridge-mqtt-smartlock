@@ -1,4 +1,4 @@
-import { API, HAP, Logging, AccessoryConfig, Service } from 'homebridge';
+import { API, HAP, Logging, AccessoryConfig, Service, Characteristic } from 'homebridge';
 import mqtt, { Client } from 'mqtt';
 
 let hap: HAP;
@@ -15,6 +15,7 @@ class MQTTLocker {
   private readonly Service;
   private readonly Characteristic;
 
+  private readonly currentStateCharacteristic: Characteristic;
   private readonly informationService: Service;
   private readonly service: Service;
 
@@ -35,7 +36,7 @@ class MQTTLocker {
     this.service = new hap.Service.LockMechanism(config.name);
 
     // create handlers for required characteristics
-    this.service.getCharacteristic(this.Characteristic.LockCurrentState)
+    this.currentStateCharacteristic = this.service.getCharacteristic(this.Characteristic.LockCurrentState)
       .onGet(this.handleLockCurrentStateGet.bind(this));
 
     this.service.getCharacteristic(this.Characteristic.LockTargetState)
@@ -108,6 +109,9 @@ class MQTTLocker {
     const degree = next ? locked : unlocked;
     this.client.publish('update', degree.toString());
     this.status = next;
+
+    const { UNSECURED, SECURED } = this.Characteristic.LockCurrentState;
+    this.currentStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
 
     return;
   }
