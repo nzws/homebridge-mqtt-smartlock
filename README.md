@@ -19,8 +19,9 @@ npm install --global @nzws/homebridge-mqtt-smartlock
     "password": ""
   },
   "degrees": {
-    "locked": 90,
-    "unlocked": 0
+    "locked": 170,
+    "unlocked": 0,
+    "free": 170
   }
 }
 ```

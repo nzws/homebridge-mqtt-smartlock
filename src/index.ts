@@ -105,10 +105,15 @@ class MQTTLocker {
   }
 
   private updateStatus(next: boolean): void {
-    const { degrees: { locked, unlocked } } = this.config;
+    const { degrees: { locked, unlocked, free } } = this.config;
 
     const degree = next ? locked : unlocked;
     this.client.publish('update', degree.toString());
+    if (free !== undefined && degree !== free) {
+      setTimeout(() => {
+        this.client.publish('update', free.toString());
+      }, 500);
+    }
     this.status = next;
 
     const { UNSECURED, SECURED } = this.Characteristic.LockCurrentState;
