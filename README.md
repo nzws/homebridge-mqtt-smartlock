@@ -21,7 +21,11 @@ npm install --global @nzws/homebridge-mqtt-smartlock
   "degrees": {
     "locked": 170,
     "unlocked": 0,
-    "free": 170
+    "free": 83
   }
 }
 ```
+
+- `mqtt`: MQTT Broker address.
+- `degrees`: Set the angle for unlocking/locking.
+  - `free`: It will move to this angle after 500ms of control. (Optional)
