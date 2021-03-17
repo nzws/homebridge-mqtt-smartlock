@@ -16,6 +16,7 @@ class MQTTLocker {
   private readonly Characteristic;
 
   private readonly currentStateCharacteristic: Characteristic;
+  private readonly targetStateCharacteristic: Characteristic;
   private readonly informationService: Service;
   private readonly service: Service;
 
@@ -39,7 +40,7 @@ class MQTTLocker {
     this.currentStateCharacteristic = this.service.getCharacteristic(this.Characteristic.LockCurrentState)
       .onGet(this.handleLockCurrentStateGet.bind(this));
 
-    this.service.getCharacteristic(this.Characteristic.LockTargetState)
+    this.targetStateCharacteristic = this.service.getCharacteristic(this.Characteristic.LockTargetState)
       .onGet(this.handleLockTargetStateGet.bind(this))
       .onSet(this.handleLockTargetStateSet.bind(this));
 
@@ -112,6 +113,7 @@ class MQTTLocker {
 
     const { UNSECURED, SECURED } = this.Characteristic.LockCurrentState;
     this.currentStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
+    this.targetStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
 
     return;
   }
