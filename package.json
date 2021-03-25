@@ -1,10 +1,10 @@
 {
   "displayName": "Homemade MQTT Smart Lock Plugin",
   "name": "@nzws/homebridge-mqtt-smartlock",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Homebridge Plugin for homemade smart lock created with mqtt",
   "license": "Apache-2.0",
-  "publishConfig":{
+  "publishConfig": {
     "access": "public"
   },
   "repository": {

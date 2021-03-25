@@ -21,7 +21,8 @@ class MQTTLocker {
   private readonly service: Service;
 
   private readonly client: Client;
-  private status = true;
+  private currentStatus = true;
+  private targetStatus = true;
 
   /**
    * REQUIRED - This is the entry point to your plugin
@@ -56,14 +57,14 @@ class MQTTLocker {
     });
 
     this.client.subscribe('toggle');
-    this.updateStatus(this.getStatus());
+    this.updateStatus(this.targetStatus);
 
     this.client.on('message', topic => {
       this.log.debug(topic);
 
       switch (topic) {
         case 'toggle':
-          return this.updateStatus(!this.getStatus());
+          return this.updateStatus(!this.targetStatus);
       }
     });
   }
@@ -81,9 +82,7 @@ class MQTTLocker {
 
     const { UNSECURED, SECURED } = this.Characteristic.LockCurrentState;
 
-    const status = await this.getStatus();
-
-    return status ? SECURED : UNSECURED;
+    return this.currentStatus ? SECURED : UNSECURED;
   }
 
   async handleLockTargetStateGet() {
@@ -91,9 +90,7 @@ class MQTTLocker {
 
     const { UNSECURED, SECURED } = this.Characteristic.LockTargetState;
 
-    const status = await this.getStatus();
-
-    return status ? SECURED : UNSECURED;
+    return this.targetStatus ? SECURED : UNSECURED;
   }
 
   async handleLockTargetStateSet(value) {
@@ -104,26 +101,36 @@ class MQTTLocker {
     await this.updateStatus(value === SECURED);
   }
 
-  private updateStatus(next: boolean): void {
-    const { degrees: { locked, unlocked, free } } = this.config;
+  private async updateStatus(next: boolean): Promise<void> {
+    const { degrees: { locked, unlocked }, degreesInterval } = this.config;
 
-    const degree = next ? locked : unlocked;
-    this.client.publish('update', degree.toString());
-    if (free !== undefined && degree !== free) {
-      setTimeout(() => {
-        this.client.publish('update', free.toString());
-      }, 500);
-    }
-    this.status = next;
+    const degrees = next ? locked : unlocked;
+
+    const updateDegree = (i = 0): Promise<void> => {
+      if (degrees[i] !== undefined) {
+        this.client.publish('update', degrees[i].toString());
+      }
+
+      if (degrees[i + 1] !== undefined) {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            updateDegree(i + 1).then(resolve);
+          }, degreesInterval || 500);
+        });
+      }
+
+      return Promise.resolve();
+    };
 
     const { UNSECURED, SECURED } = this.Characteristic.LockCurrentState;
-    this.currentStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
+    this.targetStatus = next;
     this.targetStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
 
-    return;
-  }
+    await updateDegree();
 
-  private getStatus(): boolean {
-    return this.status;
+    this.currentStatus = next;
+    this.currentStateCharacteristic.updateValue(next ? SECURED : UNSECURED);
+
+    return;
   }
 }
